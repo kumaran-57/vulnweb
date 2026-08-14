@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Brain Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -12,25 +12,126 @@
 
     <div class="card dashboard-card">
 
-        <h1>Welcome, {{ user.username }} 👋</h1>
+        <h1>Welcome, {{ user.username }} 🧠</h1>
 
-        <p>You are logged in successfully.</p>
+        <p>Your highest score is:</p>
+
+        <h2 id="highScore">{{ user.high_score }}</h2>
 
         <div class="info-box">
-            <p><strong>Password storage:</strong>
-                {% if user.is_encrypted %}
-                    Encrypted / Hashed
-                {% else %}
-                    Plain Text (Demo Only)
-                {% endif %}
-            </p>
+            <h3>Quick Math Challenge</h3>
+            <p>Solve as many questions as you can in 30 seconds.</p>
         </div>
+
+        <div id="gameArea">
+
+            <h2 id="question">Press Start</h2>
+
+            <input type="number" id="answer" placeholder="Your answer">
+
+            <button class="primary-btn" onclick="submitAnswer()">Submit</button>
+
+            <div style="height:10px"></div>
+
+            <button class="primary-btn" onclick="startGame()">Start Game</button>
+
+            <div style="margin-top:20px;">
+                <p>Score: <span id="score">0</span></p>
+                <p>Time: <span id="time">30</span>s</p>
+            </div>
+
+        </div>
+
+        <div style="height:20px"></div>
 
         <a href="{{ url_for('logout') }}" class="primary-btn">Logout</a>
 
     </div>
 
 </div>
+
+<script>
+let num1, num2, correct;
+let score = 0;
+let time = 30;
+let timer;
+let gameRunning = false;
+
+function newQuestion() {
+    num1 = Math.floor(Math.random() * 20) + 1;
+    num2 = Math.floor(Math.random() * 20) + 1;
+    correct = num1 + num2;
+
+    document.getElementById('question').innerText =
+        `${num1} + ${num2} = ?`;
+
+    document.getElementById('answer').value = '';
+    document.getElementById('answer').focus();
+}
+
+function startGame() {
+    score = 0;
+    time = 30;
+    gameRunning = true;
+
+    document.getElementById('score').innerText = score;
+    document.getElementById('time').innerText = time;
+
+    newQuestion();
+
+    clearInterval(timer);
+
+    timer = setInterval(() => {
+        time--;
+        document.getElementById('time').innerText = time;
+
+        if (time <= 0) {
+            endGame();
+        }
+    }, 1000);
+}
+
+function submitAnswer() {
+    if (!gameRunning) return;
+
+    const ans = parseInt(document.getElementById('answer').value);
+
+    if (ans === correct) {
+        score++;
+        document.getElementById('score').innerText = score;
+    }
+
+    newQuestion();
+}
+
+function endGame() {
+    gameRunning = false;
+    clearInterval(timer);
+
+    document.getElementById('question').innerText =
+        `Game Over! Final Score: ${score}`;
+
+    fetch('/save_score', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ score: score })
+    })
+    .then(r => r.json())
+    .then(data => {
+        document.getElementById('highScore').innerText = data.high_score;
+        alert(`Game Over! Score: ${score}\\nHighest Score: ${data.high_score}`);
+    });
+}
+
+// Enter key support
+document.getElementById('answer').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        submitAnswer();
+    }
+});
+</script>
 
 </body>
 </html>
