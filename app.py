@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -17,6 +17,9 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     is_encrypted = db.Column(db.Boolean, default=True)
+
+    # Brain game highest score
+    high_score = db.Column(db.Integer, default=0)
 
 # ----------------------------
 # Create Database
@@ -165,6 +168,7 @@ def login_url():
             <div class="box">
                 <h2>Login Successful</h2>
                 <p>Welcome, <b>{username}</b></p>
+                <p>High Score: <b>{user.high_score}</b></p>
                 <a href="/">Go to Dashboard</a>
             </div>
         </body>
@@ -175,6 +179,43 @@ def login_url():
     <h3>Invalid password</h3>
     <p><a href="/">Back</a></p>
     '''
+
+# ----------------------------
+# Save Brain Game Score
+# ----------------------------
+@app.route('/save_score', methods=['POST'])
+def save_score():
+    if 'user_id' not in session:
+        return jsonify({'success': False, 'message': 'Not logged in'}), 401
+
+    data = request.get_json()
+    score = int(data.get('score', 0))
+
+    user = User.query.get(session['user_id'])
+
+    # Update only if higher than current high score
+    if score > user.high_score:
+        user.high_score = score
+        db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'high_score': user.high_score
+    })
+
+# ----------------------------
+# Get Current High Score
+# ----------------------------
+@app.route('/high_score')
+def high_score():
+    if 'user_id' not in session:
+        return jsonify({'high_score': 0})
+
+    user = User.query.get(session['user_id'])
+
+    return jsonify({
+        'high_score': user.high_score
+    })
 
 # ----------------------------
 # Logout
@@ -189,6 +230,8 @@ def logout():
 # Run App
 # ----------------------------
 if __name__ == '__main__':
+    # HTTP version
     app.run(host='0.0.0.0', port=5000, debug=True)
 
-# if __name__ == '__main__': app.run( host='0.0.0.0', port=5000, debug=True, ssl_context='adhoc' )
+    # HTTPS version (uncomment to use)
+    # app.run(host='0.0.0.0', port=5000, debug=True, ssl_context='adhoc')
