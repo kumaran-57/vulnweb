@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <div class="card dashboard-card">
+
+        <h1>Welcome, {{ user.username }} 👋</h1>
+
+        <p>You are logged in successfully.</p>
+
+        <div class="info-box">
+            <p><strong>Password storage:</strong>
+                {% if user.is_encrypted %}
+                    Encrypted / Hashed
+                {% else %}
+                    Plain Text (Demo Only)
+                {% endif %}
+            </p>
+        </div>
+
+        <a href="{{ url_for('logout') }}" class="primary-btn">Logout</a>
+
+    </div>
+
+</div>
+
+</body>
+</html>
